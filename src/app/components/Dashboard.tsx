@@ -427,7 +427,7 @@ function TrendsUploader({ onToast }: { onToast: (s: { ok: boolean; msg: string }
 }
 
 function SidebarForm({ onStart, onDone, onProgress }: {
-  onStart: (kw: string) => void; onDone: (id: string) => void; onProgress: (p: ProgressState) => void;
+  onStart: (kw: string) => void; onDone: (id: string) => Promise<void>; onProgress: (p: ProgressState) => void;
 }) {
   const [keyword, setKeyword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -527,7 +527,19 @@ export default function Dashboard({ initialBlogs }: { initialBlogs: Blog[] }) {
             <p className="text-[10px] uppercase tracking-widest text-slate-600 mb-2 font-medium">New Blog</p>
             <SidebarForm
               onStart={(kw) => { setGenerating({ keyword: kw, progress: null }); setActiveBlogId(null); }}
-              onDone={(id) => { setGenerating(null); setActiveBlogId(id); }}
+              onDone={async (id) => {
+                // Fetch fresh blog data immediately — don't wait for Realtime
+                const { data: freshBlog } = await supabase.from("blogs").select("*").eq("id", id).single();
+                if (freshBlog) {
+                  setBlogs(prev => {
+                    const exists = prev.find(b => b.id === id);
+                    if (exists) return prev.map(b => b.id === id ? freshBlog : b);
+                    return [freshBlog, ...prev];
+                  });
+                }
+                setGenerating(null);
+                setActiveBlogId(id);
+              }}
               onProgress={(p) => setGenerating(prev => prev ? { ...prev, progress: p } : null)}
             />
           </div>
@@ -583,6 +595,7 @@ export default function Dashboard({ initialBlogs }: { initialBlogs: Blog[] }) {
               </div>
             ) : activeBlog ? (
               <BlogViewer
+                key={activeBlog.id}
                 blog={activeBlog}
                 liveContent={liveBlogContent[activeBlog.id]}
                 onContentChange={(c) => handleBlogUpdate(activeBlog.id, c)}
@@ -604,6 +617,7 @@ export default function Dashboard({ initialBlogs }: { initialBlogs: Blog[] }) {
           <div className="w-80 shrink-0 overflow-hidden">
             {activeBlog && !generating ? (
               <ChatPanel
+                key={activeBlog.id}
                 blog={activeBlog}
                 onBlogUpdate={(content) => handleBlogUpdate(activeBlog.id, content)}
               />
