@@ -304,7 +304,7 @@ function ChatPanel({ blog, onBlogUpdate }: { blog: Blog; onBlogUpdate: (content:
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
         {messages.map((msg, i) => (
           <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
-            <div className={`max-w-[85%] rounded-2xl px-3 py-2.5 text-xs leading-relaxed ${
+            <div className={`max-w-[85%] rounded-2xl px-3 py-2.5 text-xs leading-relaxed break-words overflow-wrap-anywhere ${
               msg.role === "user"
                 ? "bg-teal-600/30 text-teal-100 rounded-br-sm"
                 : "bg-white/5 text-slate-300 rounded-bl-sm border border-white/10"
